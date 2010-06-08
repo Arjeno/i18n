@@ -34,6 +34,17 @@ def setup_mocha
   end
 end
 
+def setup_mongoid
+  begin
+    require 'mongoid'
+    require 'i18n/backend/mongoid'
+    require 'i18n/backend/mongoid/store_procs'
+    Mongoid.database = Mongo::Connection.new('localhost', @port).db('i18n_test')
+  rescue LoadError => e
+    puts "can't use Mongoid backend because: #{e.message}"
+  end
+end
+
 def setup_active_record
   begin
     require 'active_record'
