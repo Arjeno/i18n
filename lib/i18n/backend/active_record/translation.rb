@@ -46,33 +46,36 @@ module I18n
     #   # => 'FOO'
     class ActiveRecord
       class Translation < ::ActiveRecord::Base
+        TRUTHY_CHAR = "\001"
+        FALSY_CHAR = "\002"
+
         set_table_name 'translations'
         attr_protected :is_proc, :interpolations
 
         serialize :value
         serialize :interpolations, Array
 
-        scope_method = ::ActiveRecord::VERSION::MAJOR == 2 ? :named_scope : :scope
-
-        send scope_method, :locale, lambda { |locale|
-          { :conditions => { :locale => locale.to_s } }
-        }
-
-        send scope_method, :lookup, lambda { |keys, *separator|
-          column_name = connection.quote_column_name('key')
-          keys = Array(keys).map! { |key| key.to_s }
-
-          unless separator.empty?
-            warn "[DEPRECATION] Giving a separator to Translation.lookup is deprecated. " <<
-              "You can change the internal separator by overwriting FLATTEN_SEPARATOR."
+        class << self
+          def locale(locale)
+            scoped(:conditions => { :locale => locale.to_s })
           end
 
-          namespace = "#{keys.last}#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}%"
-          { :conditions => ["#{column_name} IN (?) OR #{column_name} LIKE ?", keys, namespace] }
-        }
+          def lookup(keys, *separator)
+            column_name = connection.quote_column_name('key')
+            keys = Array(keys).map! { |key| key.to_s }
 
-        def self.available_locales
-          Translation.find(:all, :select => 'DISTINCT locale').map { |t| t.locale.to_sym }
+            unless separator.empty?
+              warn "[DEPRECATION] Giving a separator to Translation.lookup is deprecated. " <<
+                "You can change the internal separator by overwriting FLATTEN_SEPARATOR."
+            end
+
+            namespace = "#{keys.last}#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}%"
+            scoped(:conditions => ["#{column_name} IN (?) OR #{column_name} LIKE ?", keys, namespace])
+          end
+
+          def available_locales
+            Translation.find(:all, :select => 'DISTINCT locale').map { |t| t.locale.to_sym }
+          end
         end
 
         def interpolates?(key)
@@ -80,12 +83,26 @@ module I18n
         end
 
         def value
+          value = read_attribute(:value)
           if is_proc
-            Kernel.eval(read_attribute(:value))
+            Kernel.eval(value)
+          elsif value == FALSY_CHAR
+            false
+          elsif value == TRUTHY_CHAR
+            true
           else
-            value = read_attribute(:value)
-            value == 'f' ? false : value
+            value
           end
+        end
+
+        def value=(value)
+          if value === false
+            value = FALSY_CHAR
+          elsif value === true
+            value = TRUTHY_CHAR
+          end
+
+          write_attribute(:value, value)
         end
       end
     end
