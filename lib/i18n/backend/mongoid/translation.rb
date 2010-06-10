@@ -71,7 +71,7 @@ module I18n
             end
 
             namespace = "#{keys.last}#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}.*"
-            where("['#{keys.map {|k| EscapeUtils.escape_javascript(k) }.join("','")}'].indexOf(this.key) != -1 || this.key.match(/^#{namespace}$/)")
+            where("['#{keys.map {|k| EscapeUtils.escape_javascript(k) }.join("','")}'].indexOf(this.key) != -1 || this.key.match(/^#{namespace.gsub(/\//, '\/')}$/)")
           end
 
           def available_locales

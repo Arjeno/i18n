@@ -42,6 +42,8 @@ class I18nBackendMongoidTest < Test::Unit::TestCase
   test "can store translations with keys that are translations containing special chars" do
     I18n.backend.store_translations(:es, :"Pagina's" => "Pagina's" )
     assert_equal "Pagina's", I18n.t(:"Pagina's", :locale => :es)
+    I18n.backend.store_translations(:es, :"a/split/key" => 'some text')
+    assert_equal 'some text', I18n.t(:"a/split/key", :locale => :es)
   end
 
   test "missing translations table does not cause an error in #available_locales" do
