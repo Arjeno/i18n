@@ -68,29 +68,11 @@ module I18n
 
           namespace = "#{keys.last}#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}.*"
           unless keys.empty?
-            { :where => "['#{keys.map {|k| escape_javascript(k) }.join("','")}'].indexOf(this.key) != -1 || this.key.match(/#{namespace}/)" }
+            { :where => "['#{keys.map {|k| EscapeUtils.escape_javascript(k)) }.join("','")}'].indexOf(this.key) != -1 || this.key.match(/#{namespace}/)" }
           else
             { :where => { :key => /^#{namespace}$/ } }
           end
         }
-
-        JS_ESCAPE_MAP = {
-          '\\'    => '\\\\',
-          '</'    => '<\/',
-          "\r\n"  => '\n',
-          "\n"    => '\n',
-          "\r"    => '\n',
-          '"'     => '\\"',
-          "'"     => "\\'" }
-
-        # Escape carrier returns and single and double quotes for JavaScript segments.
-        def self.escape_javascript(javascript)
-          if javascript
-            javascript.gsub(/(\\|<\/|\r\n|[\n\r"'])/) { JS_ESCAPE_MAP[$1] }
-          else
-            ''
-          end
-        end
 
         def self.available_locales
           Translation.find(:all, :select => 'DISTINCT locale').map { |t| t.locale.to_sym }
