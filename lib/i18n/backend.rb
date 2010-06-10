@@ -13,6 +13,7 @@ module I18n
     autoload :KeyValue,              'i18n/backend/key_value'
     autoload :Memoize,               'i18n/backend/memoize'
     autoload :Metadata,              'i18n/backend/metadata'
+    autoload :Mongoid,               'i18n/backend/mongoid'
     autoload :Pluralization,         'i18n/backend/pluralization'
     autoload :Simple,                'i18n/backend/simple'
     autoload :Transliterator,        'i18n/backend/transliterator'
