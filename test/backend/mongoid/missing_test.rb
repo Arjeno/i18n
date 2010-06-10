@@ -60,8 +60,7 @@ class I18nMongoidMissingTest < Test::Unit::TestCase
 
   test "creates a stub per pluralization when a custom separator is used" do
     I18n.t('foo|bar', :count => 999, :separator => '|')
-    throw I18n::Backend::Mongoid::Translation.all.map(&:key)
-    translations = I18n::Backend::Mongoid::Translation.locale(:en).where(:key => %w{ foo.bar.zero foo.bar.one foo.bar.other })
+    translations = I18n::Backend::Mongoid::Translation.locale(:en).where(:key.in => %w{ foo.bar.zero foo.bar.one foo.bar.other })
     assert_equal 3, translations.length
   end
 

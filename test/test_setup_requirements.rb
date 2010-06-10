@@ -40,6 +40,8 @@ end
 def setup_mongoid
   begin
     require 'mongoid'
+    require 'mongo'
+    require 'escape_utils'
     require 'i18n/backend/mongoid'
     require 'i18n/backend/mongoid/store_procs'
     Mongoid.database = Mongo::Connection.new('localhost', @port).db('i18n_test')

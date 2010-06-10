@@ -12,11 +12,7 @@ module I18n
         include Base, Flatten
 
         def available_locales
-          #begin
-            Translation.available_locales
-          #rescue ::ActiveRecord::StatementInvalid
-          #  []
-          #end
+          Translation.available_locales
         end
 
         def store_translations(locale, data, options = {})

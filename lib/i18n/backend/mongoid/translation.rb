@@ -42,11 +42,14 @@ module I18n
     #     :locale => 'en'
     #     :key    => 'foo'
     #     :value  => lambda { |key, options| 'FOO' }
-    #   Translation.first(:conditions => { :locale => 'en', :key => 'foo' }).value
+    #   Translation.find_by_locale_and_key('en', 'foo').value
     #   # => 'FOO'
     class Mongoid
       class Translation
         include ::Mongoid::Document
+
+        TRUTHY_CHAR = "\001"
+        FALSY_CHAR = "\002"
 
         field :locale
         field :key
@@ -54,28 +57,26 @@ module I18n
         field :interpolations,  :type => Array
         field :is_proc,         :type => Boolean, :default => false
 
-        named_scope :locale, lambda { |locale|
-          { :where => { :locale => locale.to_s } }
-        }
-
-        named_scope :lookup, lambda { |keys, *separator|
-          keys = Array(keys).map! { |key| key.to_s }
-
-          unless separator.empty?
-            warn "[DEPRECATION] Giving a separator to Translation.lookup is deprecated. " <<
-              "You can change the internal separator by overwriting FLATTEN_SEPARATOR."
+        class << self
+          def locale(locale)
+            where(:locale => locale.to_s)
           end
 
-          namespace = "#{keys.last}#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}.*"
-          unless keys.empty?
-            { :where => "['#{keys.map {|k| EscapeUtils.escape_javascript(k)) }.join("','")}'].indexOf(this.key) != -1 || this.key.match(/#{namespace}/)" }
-          else
-            { :where => { :key => /^#{namespace}$/ } }
-          end
-        }
+          def lookup(keys, *separator)
+            keys = Array(keys).map! { |key| key.to_s }
 
-        def self.available_locales
-          Translation.find(:all, :select => 'DISTINCT locale').map { |t| t.locale.to_sym }
+            unless separator.empty?
+              warn "[DEPRECATION] Giving a separator to Translation.lookup is deprecated. " <<
+                "You can change the internal separator by overwriting FLATTEN_SEPARATOR."
+            end
+
+            namespace = "#{keys.last}#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}.*"
+            where("['#{keys.map {|k| EscapeUtils.escape_javascript(k) }.join("','")}'].indexOf(this.key) != -1 || this.key.match(/^#{namespace}$/)")
+          end
+
+          def available_locales
+            Translation.find(:all).map { |t| t.locale.to_sym }.uniq
+          end
         end
 
         def interpolates?(key)
@@ -83,12 +84,26 @@ module I18n
         end
 
         def value
+          value = read_attribute(:value)
           if is_proc
-            Kernel.eval(read_attribute(:value))
+            Kernel.eval(value)
+          elsif value == FALSY_CHAR
+            false
+          elsif value == TRUTHY_CHAR
+            true
           else
-            value = read_attribute(:value)
-            value == 'f' ? false : value
+            value
           end
+        end
+
+        def value=(value)
+          if value === false
+            value = FALSY_CHAR
+          elsif value === true
+            value = TRUTHY_CHAR
+          end
+
+          write_attribute(:value, value)
         end
       end
     end

@@ -44,12 +44,15 @@ class I18nBackendMongoidTest < Test::Unit::TestCase
     assert_equal "Pagina's", I18n.t(:"Pagina's", :locale => :es)
   end
 
-  #with_mocha do
-  #  test "missing translations table does not cause an error in #available_locales" do
-  #    I18n::Backend::Mongoid::Translation.expects(:available_locales).raises(::Mongoid::StatementInvalid)
-  #    assert_equal [], I18n.backend.available_locales
-  #  end
-  #end
+  test "missing translations table does not cause an error in #available_locales" do
+    Mongoid.database.collections.each do |collection|
+      begin
+        collection.drop
+      rescue
+      end
+    end
+    assert_equal [], I18n.backend.available_locales
+  end
 
   def test_expand_keys
     assert_equal %w(foo foo.bar foo.bar.baz), I18n.backend.send(:expand_keys, :'foo.bar.baz')
