@@ -60,6 +60,7 @@ module I18n
           raise(I18n::MissingTranslationData.new(locale, key, options))
         end
 
+
         def localize(locale, object, format = :default, options = {})
           backends.each do |backend|
             begin
