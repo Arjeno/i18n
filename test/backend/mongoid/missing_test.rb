@@ -52,6 +52,13 @@ class I18nMongoidMissingTest < Test::Unit::TestCase
     assert !I18n::Backend::Mongoid::Translation.locale(:en).where(:key => 'foo').first
   end
 
+  test 'does not create a stub when no plural keys exist' do
+    I18n.backend = I18n::Backend::Chain.new(Backend.new, I18n::Backend::Simple.new)
+    I18n.t('foo', :count => 1)
+    assert_equal 1, I18n::Backend::Mongoid::Translation.count
+    assert_equal 'i18n.plural.keys', I18n::Backend::Mongoid::Translation.first.key
+  end
+
   test "creates a stub when a custom separator is used" do
     I18n.t('foo|baz', :separator => '|')
     I18n::Backend::Mongoid::Translation.locale(:en).lookup("foo.baz").first.update_attributes!(:value => 'baz!')
