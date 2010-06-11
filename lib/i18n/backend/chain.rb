@@ -60,6 +60,18 @@ module I18n
           raise(I18n::MissingTranslationData.new(locale, key, options))
         end
 
+        def pluralize( locale, entry, count )
+          pluralization = nil
+
+          backends.each do |backend|
+            begin
+              pluralization = backend.pluralize(locale, entry, count)
+            rescue InvalidPluralizationData
+            end
+          end
+          return pluralization if pluralization
+          raise(I18n::InvalidPluralizationData.new(entry, count))
+        end
 
         def localize(locale, object, format = :default, options = {})
           backends.each do |backend|
