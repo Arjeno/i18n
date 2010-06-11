@@ -84,7 +84,8 @@ module I18n
         end
 
         def value
-          value = Marshal.load(read_attribute(:value))
+          value = read_attribute(:value)
+          value = Marshal.load(value) unless value.nil?
           if is_proc
             Kernel.eval(value)
           elsif value == FALSY_CHAR
