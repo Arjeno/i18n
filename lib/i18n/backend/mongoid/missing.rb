@@ -56,7 +56,9 @@ module I18n
         def translate(locale, key, options = {})
           super
         rescue I18n::MissingTranslationData => e
-          self.store_default_translations(locale, key, options)
+          unless options[:count] and !I18n.t('i18n.plural.keys', :locale => locale).is_a?(Array)
+            self.store_default_translations(locale, key, options)
+          end
           raise e
         end
       end
