@@ -46,6 +46,12 @@ class I18nBackendMongoidTest < Test::Unit::TestCase
     assert_equal 'some text', I18n.t(:"a/split/key", :locale => :es)
   end
 
+  test 'can store arrays' do
+    I18n.backend.store_translations(:es, :an_array => ['first', 'second', 'last'])
+    I18n::Backend::Mongoid::Translation.create :locale => 'en', :key => 'wtf', :value => ['first', 'second', 'last']
+    assert_equal ['first', 'second', 'last'], I18n.t(:an_array, :locale => :es)
+  end
+
   test "missing translations table does not cause an error in #available_locales" do
     Mongoid.database.collections.each do |collection|
       begin

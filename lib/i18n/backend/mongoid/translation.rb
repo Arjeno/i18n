@@ -53,7 +53,7 @@ module I18n
 
         field :locale
         field :key
-        field :value,           :type => Hash
+        field :value
         field :interpolations,  :type => Array
         field :is_proc,         :type => Boolean, :default => false
 
@@ -84,7 +84,7 @@ module I18n
         end
 
         def value
-          value = read_attribute(:value)
+          value = Marshal.load(read_attribute(:value))
           if is_proc
             Kernel.eval(value)
           elsif value == FALSY_CHAR
@@ -103,7 +103,7 @@ module I18n
             value = TRUTHY_CHAR
           end
 
-          write_attribute(:value, value)
+          write_attribute(:value, Marshal.dump(value))
         end
       end
     end
