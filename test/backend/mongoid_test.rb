@@ -38,7 +38,17 @@ class I18nBackendMongoidTest < Test::Unit::TestCase
 
     assert_equal 'foo', I18n.t(:foo)
   end
-  
+
+  test 'looks up keys correctly when using . separator' do
+    I18n.backend.store_translations(:en, :foo => 'Foo')
+    I18n.backend.store_translations(:en, :foo_bar => 'Foo Bar')
+
+    translations = I18n::Backend::Mongoid::Translation.locale(:en).lookup('foo').all
+
+    assert_equal 1, translations.length
+    assert_equal 'Foo', I18n.t(:foo)
+  end
+
   test "can store translations with keys that are translations containing special chars" do
     I18n.backend.store_translations(:es, :"Pagina's" => "Pagina's" )
     assert_equal "Pagina's", I18n.t(:"Pagina's", :locale => :es)
