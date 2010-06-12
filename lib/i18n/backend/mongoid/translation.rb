@@ -70,8 +70,10 @@ module I18n
                 "You can change the internal separator by overwriting FLATTEN_SEPARATOR."
             end
 
-            namespace = "#{keys.last}#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}.*"
-            where("['#{keys.map {|k| EscapeUtils.escape_javascript(k) }.join("','")}'].indexOf(this.key) != -1 || this.key.match(/^#{namespace.gsub(/\//, '\/')}$/)")
+            namespace = "#{keys.last}\\#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}.*"
+
+            where("['#{keys.map {|k| EscapeUtils.escape_javascript(k) }.join("','")}']." +
+              "indexOf(this.key) != -1 || this.key.match(/^#{namespace.gsub(/\//, '\/')}$/)")
           end
 
           def available_locales
