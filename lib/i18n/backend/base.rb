@@ -200,7 +200,7 @@ module I18n
         # for all other file extensions.
         def load_file(filename)
           type = File.extname(filename).tr('.', '').downcase
-          raise UnknownFileType.new(type, filename) unless respond_to?(:"load_#{type}")
+          raise UnknownFileType.new(type, filename) unless respond_to?(:"load_#{type}", true)
           data = send(:"load_#{type}", filename) # TODO raise a meaningful exception if this does not yield a Hash
           data.each { |locale, d| store_translations(locale, d || {}) }
         end
@@ -219,7 +219,7 @@ module I18n
 
         def warn_syntax_deprecation!(locale, string) #:nodoc:
           return if @skip_syntax_deprecation
-          warn "The {{key}} interpolation syntax in I18n messages is deprecated. Please use %{key} instead.\n#{locale} - #{string}\n#{caller.join("\n")}"
+          warn "The {{key}} interpolation syntax in I18n messages is deprecated. Please use %{key} instead.\n#{locale} - #{string}\n"
           @skip_syntax_deprecation = true
         end
     end
