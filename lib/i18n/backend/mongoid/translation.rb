@@ -108,6 +108,10 @@ module I18n
 
           write_attribute(:value, Marshal.dump(value))
         end
+        
+        def locale=(locale)
+          write_attribute(:locale, locale.to_sym)
+        end
       end
     end
   end
