@@ -1,5 +1,3 @@
-# encoding: utf-8
-
 # The InterpolationCompiler module contains optimizations that can tremendously
 # speed up the interpolation process on the Simple backend.
 #
@@ -10,7 +8,7 @@
 # To enable pre-compiled interpolations you can simply include the
 # InterpolationCompiler module to the Simple backend:
 #
-#   I18n::Backend::Simple.send(:include, I18n::Backend::InterpolationCompiler)
+#   I18n::Backend::Simple.include(I18n::Backend::InterpolationCompiler)
 #
 # Note that InterpolationCompiler does not yield meaningful results and consequently
 # should not be used with Ruby 1.9 (YARV) but improves performance everywhere else
@@ -63,7 +61,7 @@ module I18n
 
         def interpolate_or_raise_missing(key)
           escaped_key = escape_key_sym(key)
-          Base::RESERVED_KEYS.include?(key) ? reserved_key(escaped_key) : interpolate_key(escaped_key)
+          RESERVED_KEYS.include?(key) ? reserved_key(escaped_key) : interpolate_key(escaped_key)
         end
 
         def interpolate_key(key)

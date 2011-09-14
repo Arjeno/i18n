@@ -1,10 +1,6 @@
-# encoding: utf-8
-$:.unshift(File.expand_path(File.dirname(__FILE__) + '/../')); $:.uniq!
 require 'test_helper'
 
-setup_rufus_tokyo
-
-require 'active_support/all'
+I18n::Tests.setup_rufus_tokyo
 
 class I18nBackendKeyValueTest < Test::Unit::TestCase
   def setup_backend!(subtree=true)

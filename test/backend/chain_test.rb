@@ -1,5 +1,3 @@
-# encoding: utf-8
-$:.unshift(File.expand_path(File.dirname(__FILE__) + '/../')); $:.uniq!
 require 'test_helper'
 
 class I18nBackendChainTest < Test::Unit::TestCase
@@ -59,11 +57,16 @@ class I18nBackendChainTest < Test::Unit::TestCase
     assert_equal [{ :short => 'short', :long => 'long' }, { :one => 'one' }, 'Bah'], I18n.t([:formats, :plural_2, :bah], :default => 'Bah')
   end
 
+  test "store_translations options are not dropped while transfering to backend" do
+    @first.expects(:store_translations).with(:foo, {:bar => :baz}, {:option => 'persists'})
+    I18n.backend.store_translations :foo, {:bar => :baz}, {:option => 'persists'}
+  end
+
   protected
 
     def backend(translations)
       backend = I18n::Backend::Simple.new
-      translations.each { |locale, translations| backend.store_translations(locale, translations) }
+      translations.each { |locale, data| backend.store_translations(locale, data) }
       backend
     end
 end

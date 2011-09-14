@@ -1,5 +1,3 @@
-# encoding: utf-8
-
 require 'i18n/gettext'
 require 'i18n/gettext/po_parser'
 
@@ -8,7 +6,7 @@ require 'i18n/gettext/po_parser'
 # To use this you can simply include the module to the Simple backend - or
 # whatever other backend you are using.
 #
-#   I18n::Backend::Simple.send(:include, I18n::Backend::Gettext)
+#   I18n::Backend::Simple.include(I18n::Backend::Gettext)
 #
 # Now you should be able to include your Gettext translation (*.po) files to
 # the I18n.load_path so they're loaded to the backend and you can use them as
@@ -45,8 +43,8 @@ module I18n
               key, value = normalize_pluralization(locale, key, value) if key.index("\000")
 
               parts = key.split('|').reverse
-              normalized = parts.inject({}) do |normalized, part|
-                normalized = { part => normalized.empty? ? value : normalized }
+              normalized = parts.inject({}) do |_normalized, part|
+                { part => _normalized.empty? ? value : _normalized }
               end
 
               result.deep_merge!(normalized)
@@ -64,7 +62,7 @@ module I18n
           raise "invalid number of plurals: #{values.size}, keys: #{keys.inspect}" if values.size != keys.size
 
           result = {}
-          values.each_with_index { |value, ix| result[keys[ix]] = value }
+          values.each_with_index { |_value, ix| result[keys[ix]] = _value }
           [key, result]
         end
 

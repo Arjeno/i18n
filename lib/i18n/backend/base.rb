@@ -1,23 +1,18 @@
-# encoding: utf-8
-
 require 'yaml'
 require 'i18n/core_ext/hash'
+require 'i18n/core_ext/kernel/surpress_warnings'
 
 module I18n
   module Backend
     module Base
       include I18n::Backend::Transliterator
 
-      RESERVED_KEYS = [:scope, :default, :separator, :resolve, :object, :fallback]
-      RESERVED_KEYS_PATTERN = /%\{(#{RESERVED_KEYS.join("|")})\}/
-      DEPRECATED_INTERPOLATION_SYNTAX_PATTERN = /(\\)?\{\{([^\}]+)\}\}/
-
       # Accepts a list of paths to translation files. Loads translations from
       # plain Ruby (*.rb) or YAML files (*.yml). See #load_rb and #load_yml
       # for details.
       def load_translations(*filenames)
-        filenames = I18n.load_path.flatten if filenames.empty?
-        filenames.each { |filename| load_file(filename) }
+        filenames = I18n.load_path if filenames.empty?
+        filenames.flatten.each { |filename| load_file(filename) }
       end
 
       # This method receives a locale, a data hash and options for storing translations.
@@ -39,7 +34,7 @@ module I18n
             default(locale, key, default, options) : resolve(locale, key, entry, options)
         end
 
-        raise(I18n::MissingTranslationData.new(locale, key, options)) if entry.nil?
+        throw(:exception, I18n::MissingTranslation.new(locale, key, options)) if entry.nil?
         entry = entry.dup if entry.is_a?(String)
 
         entry = pluralize(locale, entry, count) if count
@@ -113,17 +108,18 @@ module I18n
         # subjects will be returned directly.
         def resolve(locale, object, subject, options = {})
           return subject if options[:resolve] == false
-          case subject
-          when Symbol
-            I18n.translate(subject, options.merge(:locale => locale, :raise => true))
-          when Proc
-            date_or_time = options.delete(:object) || object
-            resolve(locale, object, subject.call(date_or_time, options))
-          else
-            subject
+          result = catch(:exception) do
+            case subject
+            when Symbol
+              I18n.translate(subject, options.merge(:locale => locale, :throw => true))
+            when Proc
+              date_or_time = options.delete(:object) || object
+              resolve(locale, object, subject.call(date_or_time, options))
+            else
+              subject
+            end
           end
-        rescue MissingTranslationData
-          nil
+          result unless result.is_a?(MissingTranslation)
         end
 
         # Picks a translation from an array according to English pluralization
@@ -143,55 +139,12 @@ module I18n
         #
         #   interpolate "file %{file} opened by %%{user}", :file => 'test.txt', :user => 'Mr. X'
         #   # => "file test.txt opened by %{user}"
-        #
-        # Note that you have to double escape the <tt>\\</tt> when you want to escape
-        # the <tt>{{...}}</tt> key in a string (once for the string and once for the
-        # interpolation).
         def interpolate(locale, string, values = {})
-          return string unless string.is_a?(::String) && !values.empty?
-
-          preserve_encoding(string) do
-            string = string.gsub(DEPRECATED_INTERPOLATION_SYNTAX_PATTERN) do
-              escaped, key = $1, $2.to_sym
-              if escaped
-                "{{#{key}}}"
-              else
-                warn_syntax_deprecation!(locale, string)
-                "%{#{key}}"
-              end
-            end
-
-            values.each do |key, value|
-              value = value.call(values) if interpolate_lambda?(value, string, key)
-              value = value.to_s unless value.is_a?(::String)
-              values[key] = value
-            end
-
-            string % values
-          end
-        rescue KeyError => e
-          if string =~ RESERVED_KEYS_PATTERN
-            raise ReservedInterpolationKey.new($1.to_sym, string)
+          if string.is_a?(::String) && !values.empty?
+            I18n.interpolate(string, values)
           else
-            raise MissingInterpolationArgument.new(values, string)
+            string
           end
-        end
-
-        def preserve_encoding(string)
-          if string.respond_to?(:encoding)
-            encoding = string.encoding
-            result = yield
-            result.force_encoding(encoding) if result.respond_to?(:force_encoding)
-            result
-          else
-            yield
-          end
-        end
-
-        # returns true when the given value responds to :call and the key is
-        # an interpolation placeholder in the given string
-        def interpolate_lambda?(object, string, key)
-          object.respond_to?(:call) && string =~ /%\{#{key}\}|%\<#{key}>.*?\d*\.?\d*[bBdiouxXeEfgGcps]\}/
         end
 
         # Loads a single translations file by delegating to #load_rb or
@@ -200,9 +153,10 @@ module I18n
         # for all other file extensions.
         def load_file(filename)
           type = File.extname(filename).tr('.', '').downcase
-          raise UnknownFileType.new(type, filename) unless respond_to?(:"load_#{type}")
-          data = send(:"load_#{type}", filename) # TODO raise a meaningful exception if this does not yield a Hash
-          data.each { |locale, d| store_translations(locale, d) }
+          raise UnknownFileType.new(type, filename) unless respond_to?(:"load_#{type}", true)
+          data = send(:"load_#{type}", filename)
+          raise InvalidLocaleData.new(filename) unless data.is_a?(Hash)
+          data.each { |locale, d| store_translations(locale, d || {}) }
         end
 
         # Loads a plain Ruby translations file. eval'ing the file must yield
@@ -214,13 +168,7 @@ module I18n
         # Loads a YAML translations file. The data must have locales as
         # toplevel keys.
         def load_yml(filename)
-          YAML::load(IO.read(filename))
-        end
-
-        def warn_syntax_deprecation!(locale, string) #:nodoc:
-          return if @skip_syntax_deprecation
-          warn "The {{key}} interpolation syntax in I18n messages is deprecated. Please use %{key} instead.\n#{locale} - #{string}\n#{caller.join("\n")}"
-          @skip_syntax_deprecation = true
+          YAML.load_file(filename)
         end
     end
   end

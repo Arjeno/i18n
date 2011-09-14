@@ -1,12 +1,10 @@
-# encoding: utf-8
-
 # This module allows you to easily cache all responses from the backend - thus
 # speeding up the I18n aspects of your application quite a bit.
 #
 # To enable caching you can simply include the Cache module to the Simple
 # backend - or whatever other backend you are using:
 #
-#   I18n::Backend::Simple.send(:include, I18n::Backend::Cache)
+#   I18n::Backend::Simple.include(I18n::Backend::Cache)
 #
 # You will also need to set a cache store implementation that you want to use:
 #
@@ -71,24 +69,28 @@ module I18n
       protected
 
         def fetch(cache_key, &block)
-          result = begin
-            I18n.cache_store.fetch(cache_key, &block)
-          rescue MissingTranslationData => exception
-            I18n.cache_store.write(cache_key, exception)
-            exception
-          end
-          raise result if result.is_a?(Exception)
+          result = _fetch(cache_key, &block)
+          throw(:exception, result) if result.is_a?(MissingTranslation)
           result = result.dup if result.frozen? rescue result
+          result
+        end
+
+        def _fetch(cache_key, &block)
+          result = I18n.cache_store.read(cache_key) and return result
+          result = catch(:exception, &block)
+          I18n.cache_store.write(cache_key, result) unless result.is_a?(Proc)
           result
         end
 
         def cache_key(locale, key, options)
           # This assumes that only simple, native Ruby values are passed to I18n.translate.
-          # Also, in Ruby < 1.8.7 {}.hash != {}.hash
-          # (see http://paulbarry.com/articles/2009/09/14/why-rails-3-will-require-ruby-1-8-7)
-          # If args.inspect does not work for you for some reason, patches are very welcome :)
-          ['i18n', I18n.cache_namespace, locale, key.hash, RUBY_VERSION >= "1.8.7" ? options.hash : options.inspect.hash].join('/')
+          "i18n/#{I18n.cache_namespace}/#{locale}/#{key.hash}/#{USE_INSPECT_HASH ? options.inspect.hash : options.hash}"
         end
+
+      private
+        # In Ruby < 1.9 the following is true: { :foo => 1, :bar => 2 }.hash == { :foo => 2, :bar => 1 }.hash
+        # Therefore we must use the hash of the inspect string instead to avoid cache key colisions.
+        USE_INSPECT_HASH = RUBY_VERSION <= "1.9"
     end
   end
 end
