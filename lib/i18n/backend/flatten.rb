@@ -52,6 +52,7 @@ module I18n
       #   => { "a.b.c" => "d", "a.b.e" => "f", "a.g" => "h", "i" => "j" }
       #
       def flatten_keys(hash, escape, prev_key=nil, &block)
+        return nil if hash.nil?
         hash.each_pair do |key, value|
           key = escape_default_separator(key) if escape
           curr_key = [prev_key, key].compact.join(FLATTEN_SEPARATOR).to_sym
