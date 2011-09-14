@@ -43,7 +43,11 @@ module I18n
             locales
           end
         end
-
+        
+        def available_translations
+          translations
+        end
+        
         # Clean up translations hash and set initialized to false on reload!
         def reload!
           @initialized = false

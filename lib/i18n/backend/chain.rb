@@ -35,7 +35,15 @@ module I18n
         def available_locales
           backends.map { |backend| backend.available_locales }.flatten.uniq
         end
-
+        
+        def available_translations
+          translations = {}
+          backends.each do |backend|
+            translations.merge!(backend.available_translations) if backend.respond_to?('available_translations')
+          end
+          translations
+        end
+        
         def translate(locale, key, default_options = {})
           namespace = nil
           options = default_options.except(:default)
