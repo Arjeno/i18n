@@ -16,7 +16,7 @@ module I18n
         end
 
         def store_translations(locale, data, options = {})
-          escape = options.fetch(:escape, true)
+          escape = options.fetch(:escape, false)
           flatten_translations(locale, data, escape, false).each do |key, value|
             Translation.locale(locale).lookup(expand_keys(key)).each &:destroy
             Translation.create(:locale => locale.to_s, :key => key.to_s, :value => value)

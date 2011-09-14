@@ -72,7 +72,7 @@ module I18n
 
             namespace = "#{keys.last}\\#{I18n::Backend::Flatten::FLATTEN_SEPARATOR}.*"
 
-            where("['#{keys.map {|k| EscapeUtils.escape_javascript(k) }.join("','")}']." +
+            where("['#{keys.map {|k| k }.join("','")}']." +
               "indexOf(this.key) != -1 || this.key.match(/^#{namespace.gsub(/\//, '\/')}$/)")
           end
 
